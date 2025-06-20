@@ -38,12 +38,7 @@ def inputes(sockets:socket,adres):
                 sockets.send('Такого логина нет\n Попробуете еще раз '.encode('utf-8'))
         
         
-        #with lock_ip_port:
-        #    with open(FAEL_LOG_POROL,'r') as ip_p:
-        #        spisok_ip=json.load(ip_p)
-        #    with open(FAEL_LOG_POROL,'w') as ip_p:
-        #        spisok_ip["user_port_ip"][adres[1]]=adres[0]
-        #        json.dump(spisok_ip,ip_p,indent=4)
+        
         with lock:
             clientes[username]=user_client.User(adres[1],sockets,username,porol)
         sockets.send(f'Вы вошли как {username}'.encode('utf-8'))
@@ -66,20 +61,13 @@ def inputes(sockets:socket,adres):
                             sockets.send(f"Пользоваиеля с таким логином {user} не существует".encode('utf-8'))
                 except ValueError:
                     sockets.send("Неверный формат сообщения. Используйте:\"\\->\\Имя сообщение\"".encode('utf-8'))
+            elif text.startswith('->'):
+                sockets.send('Пожалуйста не используется \"->\" в начале строки если вы хотите отправить сообщению конкретному пользователь то используте такой формат:\"\\->\\Имя сообщение\"'.encode('utf-8'))
             else:
                 send(f'{username}:{text}',sockets) 
     except ConnectionResetError :
         if username!=None:
-            #with lock_ip_port:
-            #    with open(FAEL_LOG_POROL,'r') as ip_p:
-            #        spisok_ip=json.load(ip_p)["user_port_ip"]
-            #if adres[1] in spisok_ip and adres[0] in spisok_ip[adres[1]] :
-            #    del spisok_ip[adres[1]]
             del clientes[username]
-            #with lock_ip_port:
-            #    with open(FAEL_LOG_POROL,'w') as ip_p:
-            #        json.dump(spisok_ip,ip_p,indent=4)
-            #sockets.close()
             print(f"{username} отключился")
         else:
             print(f"{adres} отключился")

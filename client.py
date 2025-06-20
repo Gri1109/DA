@@ -1,6 +1,5 @@
 import threading
 import socket
-import time
 import os
 import json
 DATA_POD=os.path.join(os.path.dirname(__file__),'data_podcklechen.json')
