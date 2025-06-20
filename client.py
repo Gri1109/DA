@@ -1,9 +1,14 @@
 import threading
 import socket
 import time
+import os
+import json
+DATA_POD=os.path.join(os.path.dirname(__file__),'data_podcklechen.json')
+with open(DATA_POD,"r") as dp:
+    data=json.load(dp)
+    IP_HOST=data["IP_HOST"]
+    PORT_HOST=data["PORT_HOST"]
 
-IP_HOST='127.0.0.1'
-PORT_HOST=20156
 
 def priem(socketes):
     while True:

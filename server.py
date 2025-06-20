@@ -1,30 +1,51 @@
 import threading
 import socket
 import time
-
-IP_HOST='127.0.0.1'
-PORT_HOST=20156
-clientes={}
+import json
+import os
+import user_client
+DATA_POD=os.path.join(os.path.dirname(__file__),'data_podcklechen.json')
+with open(DATA_POD,"r") as dp:
+    data=json.load(dp)
+    IP_HOST=data["IP_HOST"]
+    PORT_HOST=data["PORT_HOST"]
+FAEL_LOG_POROL=os.path.join(os.path.dirname(__file__),'log_porol.json')
 lock=threading.Lock()
+clientes={}
+lock_ip_port=threading.Lock()
+lock_log_porol=threading.Lock()
 
-def inputes(sockets,adres):
+
+
+def inputes(sockets:socket,adres):
     username=None
     try:
         while True:
             username=sockets.recv(1024).decode('utf-8')
-            prov=True
-            with lock:
-                if not username in clientes:
-                    prov=False
-            if not prov:
+            with lock_log_porol:
+                with open(FAEL_LOG_POROL,'r') as log:
+                    spisok_log=json.load(log)
+            if username in spisok_log["user_log_por"]:
+                sockets.send('Хорошо такой пользователь есть теперь введите пороль'.encode('utf-8'))
+                while True:
+                    porol=sockets.recv(1024).decode('utf-8')
+                    if spisok_log["user_log_por"][username]==porol:
+                        break
+                    else:
+                        sockets.send('Неверный проль'.encode('utf-8'))
                 break
             else:
-                sockets.send('Такой логин уже занет\n Введите другой:'.encode('utf-8'))
-                
-            
-        with lock:
-            clientes[username]=sockets
+                sockets.send('Такого логина нет\n Попробуете еще раз '.encode('utf-8'))
         
+        
+        #with lock_ip_port:
+        #    with open(FAEL_LOG_POROL,'r') as ip_p:
+        #        spisok_ip=json.load(ip_p)
+        #    with open(FAEL_LOG_POROL,'w') as ip_p:
+        #        spisok_ip["user_port_ip"][adres[1]]=adres[0]
+        #        json.dump(spisok_ip,ip_p,indent=4)
+        with lock:
+            clientes[username]=user_client.User(adres[1],sockets,username,porol)
         sockets.send(f'Вы вошли как {username}'.encode('utf-8'))
         print(f'{username} подключился с {adres}')
 
@@ -37,21 +58,28 @@ def inputes(sockets,adres):
             if text.startswith('\\->\\'):
                 try:
                     user,inform=text[4:].split(' ',1)
-                    if user in clientes:
-                        clientes[user].send(f"{username} отправил вам: {inform}".encode('utf-8'))
-                        sockets.send(f'Сообщение доставлено {user}'.encode('utf-8'))
-                    else:
-                        sockets.send(f"Пользоваиеля с таким логином {user} не существует".encode('utf-8'))
+                    with lock:
+                        if user in clientes:
+                            clientes[user].soc.send(f"{username} отправил вам: {inform}".encode('utf-8'))
+                            sockets.send(f'Сообщение доставлено {user}'.encode('utf-8'))
+                        else:
+                            sockets.send(f"Пользоваиеля с таким логином {user} не существует".encode('utf-8'))
                 except ValueError:
                     sockets.send("Неверный формат сообщения. Используйте:\"\\->\\Имя сообщение\"".encode('utf-8'))
             else:
                 send(f'{username}:{text}',sockets) 
     except ConnectionResetError :
         if username!=None:
-            with lock:
-                if username in clientes:
-                    del clientes[username]
-            sockets.close()
+            #with lock_ip_port:
+            #    with open(FAEL_LOG_POROL,'r') as ip_p:
+            #        spisok_ip=json.load(ip_p)["user_port_ip"]
+            #if adres[1] in spisok_ip and adres[0] in spisok_ip[adres[1]] :
+            #    del spisok_ip[adres[1]]
+            del clientes[username]
+            #with lock_ip_port:
+            #    with open(FAEL_LOG_POROL,'w') as ip_p:
+            #        json.dump(spisok_ip,ip_p,indent=4)
+            #sockets.close()
             print(f"{username} отключился")
         else:
             print(f"{adres} отключился")
@@ -60,9 +88,9 @@ def inputes(sockets,adres):
 def send(text, sock):
     with lock:
         for user in clientes:
-            if clientes[user]!=sock:
+            if clientes[user].soc!=sock:
                 try:
-                    clientes[user].send(text.encode('utf-8'))
+                    clientes[user].soc.send(text.encode('utf-8'))
                 except:
                     pass
 
@@ -71,7 +99,7 @@ def start_servar():
     server=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server.bind((IP_HOST,PORT_HOST))
     server.listen()
-    print('Сервер Запущен')
+    print('\033cСервер Запущен')
     while True:
         sockets,adres=server.accept()
         threading.Thread(target=inputes,args=(sockets,adres)).start()
