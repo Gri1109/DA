@@ -5,7 +5,7 @@ import json
 DATA_POD=os.path.join(os.path.dirname(__file__),'data_podcklechen.json')
 with open(DATA_POD,"r") as dp:
     data=json.load(dp)
-    IP_HOST=data["IP_HOST"]
+    IP_HOST='158.160.140.195'
     PORT_HOST=data["PORT_HOST"]
 
 

@@ -1,13 +1,13 @@
 import threading
 import socket
-import time
+
 import json
 import os
 import user_client
 DATA_POD=os.path.join(os.path.dirname(__file__),'data_podcklechen.json')
 with open(DATA_POD,"r") as dp:
     data=json.load(dp)
-    IP_HOST=data["IP_HOST"]
+    IP_HOST='0.0.0.0'
     PORT_HOST=data["PORT_HOST"]
 FAEL_LOG_POROL=os.path.join(os.path.dirname(__file__),'log_porol.json')
 lock=threading.Lock()
